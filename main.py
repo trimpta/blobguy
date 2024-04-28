@@ -3,7 +3,7 @@ from classes import *
 
 app = Game()
 
-sphere = influencer(10)
+sphere = influencer()
 
 
 app.run(sphere)
