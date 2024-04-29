@@ -6,6 +6,9 @@ class vector:
         self.i = i
         self.j = j
 
+    def __repr__(self):
+        return f"i: {self.i}, j: {self.j}"
+
     def __eq__(self, other) -> bool:
         return self.i == other.i and self.j == other.j
     
