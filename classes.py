@@ -2,6 +2,7 @@ import pygame
 
 class vector:
 
+
     def __init__(self, i, j):
         self.i = i
         self.j = j
@@ -33,6 +34,22 @@ class vector:
     
     def __sub__(self, other):
         return vector(self.i - other.i, self.j - other.j)
+    
+    def __mul__(self, other):
+        if isinstance(other, vector):
+            raise NotImplementedError
+        
+        elif isinstance(other, bool):
+            if other:
+                return self
+            else:
+                return vector(0, 0)
+            
+        elif isinstance(other, float) or isinstance(other, int):
+            return vector(self.i * other, self.j * other)
+        
+        else:
+            raise NotImplementedError
     
     def __iadd__(self, other):
         return self + other
@@ -71,18 +88,16 @@ class influencer:
     maxvel = 5
     vel_factor = 0.1
 
-    xaddn_factor = vector(2, 0)
-    yaddn_factor = vector(0, 2)
+    xaddn_factor = vector(0.2, 0)
+    yaddn_factor = vector(0, 0.2)
+
+
 
     color = "aqua"
 
     def __init__(self):
         
         self.size = 10
-        self.pos_x = 400
-        self.pos_y = 200
-        self.vel_x = 0
-        self.vel_y = 0
 
         self.pos = vector(400, 200)
         self.vel = vector(0, 0)
@@ -92,40 +107,12 @@ class influencer:
 
         keys = game.get_events()["keys"]
 
+        targetvel = self.xaddn_factor * keys[pygame.K_d] - self.xaddn_factor * keys[pygame.K_a]  - self.yaddn_factor * keys[pygame.K_w] + self.yaddn_factor * keys[pygame.K_s]
+
+        speed_diff = targetvel - self.vel*0.1
+
+        self.pos += speed_diff
         
-        if keys[pygame.K_a]:
-            if abs(self.accn) < self.maxax:
-                self.accn -= self.xaddn_factor
-
-        if keys[pygame.K_d]:
-            if abs(self.accn) < self.maxax:
-                self.accn += self.xaddn_factor
-
-        
-
-        
-
-        if keys[pygame.K_w]:
-            if abs(self.accn) < self.maxax:
-                self.accn -= self.yaddn_factor
-
-        if keys[pygame.K_s]:
-            if abs(self.accn) < self.maxax:
-                self.accn += self.yaddn_factor
-        
-        
-
-        # self.pos_x += self.vel_x * self.vel_factor
-        # self.pos_y += self.vel_y * self.vel_factor
-
-        # self.vel_x = 0
-        # self.vel_y = 0
-
-        self.vel += self.accn
-        self.pos += self.vel
-
-        self.accn = vector(0,0)
-
 
 
     def draw(self, game):
