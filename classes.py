@@ -1,4 +1,5 @@
 import pygame
+import math
 
 class vector:
 
@@ -58,7 +59,26 @@ class vector:
         return self - other
 
     def pos(self) -> tuple:
+        '''Returns position as a tuple in the form (i, j)'''
         return (self.i, self.j)
+    
+class camera:
+
+    def __init__(self):
+        '''init'''
+
+        self.pos = vector(0, 0)
+        self.scale = 1/100
+
+    def get_pos(self, pos: tuple) -> tuple:
+        '''returns pos relative to camera as tuple'''
+        return ((vector(*pos) - self.pos)* self.scale ).pos()
+    
+    def get_vector(self, pos:vector) -> vector:
+        '''returns pos relative to camera as vector'''
+        return (pos - self.pos) * self.scale
+    
+
 
 class blob:
 
@@ -85,11 +105,11 @@ class influencer:
 
     maxvel_x, maxvel_y = 5,5
     maxax = 5
-    maxvel = 5
+    maxvel = 100
     vel_factor = 0.1
 
-    xaddn_factor = vector(0.2, 0)
-    yaddn_factor = vector(0, 0.2)
+    xaddn_factor = vector(1, 0)
+    yaddn_factor = vector(0, 1)
 
 
 
@@ -97,11 +117,26 @@ class influencer:
 
     def __init__(self):
         
-        self.size = 10
+        self.size = 5
 
-        self.pos = vector(400, 200)
+        self.pos = vector(4000, 2000)
         self.vel = vector(0, 0)
         self.accn = vector(0, 0)
+        self.space_counter = 0
+        self.history = []
+
+    def dash(self, game):
+        self.history.append(self.pos.pos())
+
+        if len(self.history) > 100 :
+            del self.history[0]
+
+        for ind, i in enumerate(self.history):
+            size = math.ceil((ind)/len(self.history)*self.size)
+            pygame.draw.circle(game.screen , "BLUE",i, size)
+        
+
+
 
     def update_pos(self, game):
 
@@ -109,26 +144,63 @@ class influencer:
 
         targetvel = self.xaddn_factor * keys[pygame.K_d] - self.xaddn_factor * keys[pygame.K_a]  - self.yaddn_factor * keys[pygame.K_w] + self.yaddn_factor * keys[pygame.K_s]
 
-        speed_diff = targetvel - self.vel*0.1
+        if keys[pygame.K_SPACE]:
+            if self.space_counter<10000:
+                if keys[pygame.K_LSHIFT]:
+                    self.vel -= self.vel * 0.6
+                else:
+                    if abs(self.vel)> 40:
+                        self.vel -= self.vel * 0.1
 
-        self.pos += speed_diff
+                        
+                self.accn = vector(0,0)
+                self.pos += self.vel
         
+        if self.space_counter > 0:
+            self.space_counter = 0
+
+        self.accn += targetvel
+        # speed_diff = targetvel - self.vel
+        # if abs(self.vel) <= self.maxvel:
+        self.vel += self.accn
+        
+        self.pos += self.vel
+
+        self.vel -= self.vel * 0.01
+        # self.accn = vector(0,0)
+        self.accn -= self.accn * 0.9
+
+        
+
+    
+    def reset(self, game):
+        keys = game.get_events()["keys"]
+        
+        if keys[pygame.K_e]:
+            self.pos = vector(100,100)
 
 
     def draw(self, game):
-        pygame.draw.circle(game.screen , self.color,self.pos.pos() , self.size)
+
+        
+        pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size)
 
         
 class Game:
 
-    SCREEN_SIZE = (800, 400)
-    FPS = 60
+    SCREEN_SIZE = (1000, 800)
+    FPS = 1000
     CLOCK = pygame.time.Clock()
+    pygame.font.init()
+
+    temp_font = pygame.font.SysFont('chalkduster.ttf', 40)
 
 
-    def __init__(self):
+
+    def __init__(self, cam):
 
         self.screen = pygame.display.set_mode(self.SCREEN_SIZE)
+        self.cam = cam
 
     def get_events(self):
 
@@ -149,6 +221,12 @@ class Game:
             "dt": dt,
         }
     
+    def circle(self, color, center, radius, width = 0):
+        '''draw circle'''
+
+        pygame.draw.circle(self.screen, color, center, radius, width)
+        
+    
     def run(self, sphere):
 
         while True:
@@ -161,6 +239,12 @@ class Game:
             self.screen.fill((0,0,0))
 
             sphere.update_pos(self)
+            sphere.dash(self)
             sphere.draw(self)
+            sphere.reset(self)
 
             pygame.display.update()
+            self.CLOCK.tick(self.FPS)
+
+            pygame.display.set_caption(str(round(self.CLOCK.get_fps())))
+

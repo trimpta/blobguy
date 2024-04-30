@@ -1,9 +1,9 @@
 import pygame
 from classes import *
 
-app = Game()
 
+cam = camera()
+app = Game(cam)
 sphere = influencer()
-
 
 app.run(sphere)
