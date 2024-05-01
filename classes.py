@@ -125,7 +125,7 @@ class influencer:
         self.space_counter = 0
         self.history = []
 
-    def dash(self, game):
+    def dash(self, mgame):
         self.history.append(self.pos.pos())
 
         if len(self.history) > 100 :
@@ -133,7 +133,8 @@ class influencer:
 
         for ind, i in enumerate(self.history):
             size = math.ceil((ind)/len(self.history)*self.size)
-            pygame.draw.circle(game.screen , "BLUE",i, size)
+            pygame.draw.circle(mgame.screen , "BLUE",i, size)
+            mgame.cam.pos = vector(*i)
         
 
 
@@ -142,15 +143,18 @@ class influencer:
 
         keys = game.get_events()["keys"]
 
-        targetvel = self.xaddn_factor * keys[pygame.K_d] - self.xaddn_factor * keys[pygame.K_a]  - self.yaddn_factor * keys[pygame.K_w] + self.yaddn_factor * keys[pygame.K_s]
+        targetvel = self.xaddn_factor * keys[pygame.K_d] \
+                  - self.xaddn_factor * keys[pygame.K_a] \
+                  - self.yaddn_factor * keys[pygame.K_w] \
+                  + self.yaddn_factor * keys[pygame.K_s]
 
         if keys[pygame.K_SPACE]:
             if self.space_counter<10000:
                 if keys[pygame.K_LSHIFT]:
-                    self.vel -= self.vel * 0.6
+                    self.vel -= self.vel * 0.4
                 else:
                     if abs(self.vel)> 40:
-                        self.vel -= self.vel * 0.1
+                        self.vel -= self.vel * 0.6
 
                         
                 self.accn = vector(0,0)
@@ -194,6 +198,7 @@ class Game:
     pygame.font.init()
 
     temp_font = pygame.font.SysFont('chalkduster.ttf', 40)
+    # temp_bg = pygame.image.load('oil.jpeg').convert()
 
 
 
@@ -201,6 +206,8 @@ class Game:
 
         self.screen = pygame.display.set_mode(self.SCREEN_SIZE)
         self.cam = cam
+        self.temp_bg = pygame.image.load('oil.jpeg').convert()
+
 
     def get_events(self):
 
@@ -236,7 +243,8 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
-            self.screen.fill((0,0,0))
+            # self.screen.fill((0,0,0))
+            self.screen.blit(self.temp_bg, self.cam.get_pos((0, 0)))
 
             sphere.update_pos(self)
             sphere.dash(self)
