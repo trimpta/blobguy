@@ -1,5 +1,6 @@
 import pygame
 import math
+from game_config import *
 
 class vector:
 
@@ -57,6 +58,29 @@ class vector:
     
     def __isub__(self, other):
         return self - other
+    
+    def __truediv__(self, other):
+
+        if isinstance(other, (int, float)):
+            return self * (1/other)
+        
+        else:
+            raise NotImplementedError
+    
+    @classmethod
+    def zero(self):
+        return vector(0, 0)
+    
+    def is_zero(self) -> bool:
+
+        return not (self.i or self.j)
+    
+    def unit(self):
+        
+        if self.is_zero():
+            return self.zero()
+        else:
+            return self/abs(self)
 
     def pos(self) -> tuple:
         '''Returns position as a tuple in the form (i, j)'''
@@ -67,45 +91,31 @@ class camera:
     def __init__(self):
         '''init'''
 
-        self.pos = vector(0, 0)
-        self.scale = 1/100
+        self.pos = vector(500, 400)
+        self.scale = 1/1000
+        self.center = vector(500, 400)
 
     def get_pos(self, pos: tuple) -> tuple:
         '''returns pos relative to camera as tuple'''
-        return ((vector(*pos) - self.pos)* self.scale ).pos()
+
+        return (((vector(*pos) - self.pos)* self.scale) + self.center).pos()
     
     def get_vector(self, pos:vector) -> vector:
         '''returns pos relative to camera as vector'''
-        return (pos - self.pos) * self.scale
+        return (pos - self.pos + self.center) * self.scale
+    
+    def follow_player(self, sphere):
+        # print(sphere.history[-1])
+        # self.pos = vector(*self.get_pos(sphere.history[-1]))
+        self.pos = sphere.pos
     
 
 
-class blob:
-
-    head = None
-    bloblist = []
-
-    size = 20
-    colour = "aqua"
-
-    def __init__(self, head):
-
-        self.head = head
-        self.state = {
-            "pos_x":None,
-            "pos_y":None,
-            "vel_x":None,
-            "vel_y":None
-        }
-
-    def draw(self):
-        pass
 
 class influencer:
 
-    maxvel_x, maxvel_y = 5,5
     maxax = 5
-    maxvel = 100
+    maxvel = 1500
     vel_factor = 0.1
 
     xaddn_factor = vector(1, 0)
@@ -117,9 +127,9 @@ class influencer:
 
     def __init__(self):
         
-        self.size = 5
+        self.size = 5   
 
-        self.pos = vector(4000, 2000)
+        self.pos = vector(0, 0)
         self.vel = vector(0, 0)
         self.accn = vector(0, 0)
         self.space_counter = 0
@@ -133,8 +143,7 @@ class influencer:
 
         for ind, i in enumerate(self.history):
             size = math.ceil((ind)/len(self.history)*self.size)
-            pygame.draw.circle(mgame.screen , "BLUE",i, size)
-            mgame.cam.pos = vector(*i)
+            pygame.draw.circle(mgame.screen , "BLUE",mgame.cam.get_pos(i), size)
         
 
 
@@ -142,37 +151,33 @@ class influencer:
     def update_pos(self, game):
 
         keys = game.get_events()["keys"]
-
         targetvel = self.xaddn_factor * keys[pygame.K_d] \
                   - self.xaddn_factor * keys[pygame.K_a] \
                   - self.yaddn_factor * keys[pygame.K_w] \
                   + self.yaddn_factor * keys[pygame.K_s]
+        #Brake functionality
+        if keys[pygame.K_SPACE] and abs(self.vel)> 4:
+            if keys[pygame.K_LSHIFT]:
+                self.vel -= self.vel * 0.1
+            else:
+                self.vel -= self.vel * 0.4
+     
+            self.accn = vector(0,0)
+            targetvel *= 0.1
+            self.pos += self.vel
 
-        if keys[pygame.K_SPACE]:
-            if self.space_counter<10000:
-                if keys[pygame.K_LSHIFT]:
-                    self.vel -= self.vel * 0.4
-                else:
-                    if abs(self.vel)> 40:
-                        self.vel -= self.vel * 0.6
+        self.accn += targetvel.unit() * 1.5 * game.get_events()["raw_dt"]
 
-                        
-                self.accn = vector(0,0)
-                self.pos += self.vel
+
+        if abs(self.vel) < self.maxvel:
+            self.vel += self.accn * game.get_events()["raw_dt"]
+        else:
+            self.vel = self.vel.unit() * self.maxvel
         
-        if self.space_counter > 0:
-            self.space_counter = 0
+        self.pos += self.vel * game.get_events()["raw_dt"]
 
-        self.accn += targetvel
-        # speed_diff = targetvel - self.vel
-        # if abs(self.vel) <= self.maxvel:
-        self.vel += self.accn
-        
-        self.pos += self.vel
-
-        self.vel -= self.vel * 0.01
-        # self.accn = vector(0,0)
-        self.accn -= self.accn * 0.9
+        self.vel *= 0.99
+        self.accn *= 0.1
 
         
 
@@ -181,11 +186,15 @@ class influencer:
         keys = game.get_events()["keys"]
         
         if keys[pygame.K_e]:
-            self.pos = vector(100,100)
-
+            self.pos = game.cam.center
+            self.vel *= 0
+            self.accn *= 0
 
     def draw(self, game):
-
+        # temp code
+        # a = game.cam.get_pos(self.pos.pos())
+        # print(a)
+        # pygame.draw.circle(game.screen , self.color,a, self.size)
         
         pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size)
 
@@ -193,7 +202,7 @@ class influencer:
 class Game:
 
     SCREEN_SIZE = (1000, 800)
-    FPS = 1000
+    FPS = 600
     CLOCK = pygame.time.Clock()
     pygame.font.init()
 
@@ -207,6 +216,8 @@ class Game:
         self.screen = pygame.display.set_mode(self.SCREEN_SIZE)
         self.cam = cam
         self.temp_bg = pygame.image.load('oil.jpeg').convert()
+        self.temp_bg = pygame.transform.scale(self.temp_bg, (47400/2,35500/2))
+
 
 
     def get_events(self):
@@ -224,9 +235,10 @@ class Game:
             "mouse press": mouse_press,
             "keys": keys,
             "mouse pos": mouse_pos,
-            "raw dt": raw_dt,
+            "raw_dt": raw_dt,
             "dt": dt,
         }
+    
     
     def circle(self, color, center, radius, width = 0):
         '''draw circle'''
@@ -243,16 +255,18 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
-            # self.screen.fill((0,0,0))
+            self.screen.fill((0,0,0))
             self.screen.blit(self.temp_bg, self.cam.get_pos((0, 0)))
-
-            sphere.update_pos(self)
+            
             sphere.dash(self)
+            self.cam.follow_player(sphere)
+            sphere.update_pos(self)
+            
             sphere.draw(self)
             sphere.reset(self)
 
             pygame.display.update()
             self.CLOCK.tick(self.FPS)
 
-            pygame.display.set_caption(str(round(self.CLOCK.get_fps())))
+            pygame.display.set_caption(str(round(sphere.maxvel - abs(sphere.vel))))
 

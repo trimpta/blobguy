@@ -6,4 +6,4 @@ cam = camera()
 app = Game(cam)
 sphere = influencer()
 
-app.run(sphere)
+app.run(sphere);
