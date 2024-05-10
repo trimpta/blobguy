@@ -86,6 +86,10 @@ class vector:
         '''Returns position as a tuple in the form (i, j)'''
         return (self.i, self.j)
     
+    def angle(self, offset = 0, scale = 1):
+
+        return math.atan2(self.i, self.j) * scale + offset 
+    
 class camera:
 
     def __init__(self):
@@ -121,29 +125,31 @@ class influencer:
     xaddn_factor = vector(1, 0)
     yaddn_factor = vector(0, 1)
 
-
-
-    color = "aqua"
+    color = "BLACK"
 
     def __init__(self):
         
-        self.size = 5   
-
+        self.size = 10
         self.pos = vector(0, 0)
         self.vel = vector(0, 0)
         self.accn = vector(0, 0)
         self.space_counter = 0
         self.history = []
 
+        # self.sperm = pygame.image.load("head.png").convert_alpha()
+        # self.sperm_rect = self.sperm.get_rect()
+        # self.sperm_mask = pygame.mask.from_surface()
+
     def dash(self, mgame):
         self.history.append(self.pos.pos())
+        print(self.pos)
 
         if len(self.history) > 100 :
             del self.history[0]
 
         for ind, i in enumerate(self.history):
             size = math.ceil((ind)/len(self.history)*self.size)
-            pygame.draw.circle(mgame.screen , "BLUE",mgame.cam.get_pos(i), size)
+            pygame.draw.circle(mgame.screen , "WHITE",mgame.cam.get_pos(i), size)
         
 
 
@@ -166,7 +172,7 @@ class influencer:
             targetvel *= 0.1
             self.pos += self.vel
 
-        self.accn += targetvel.unit() * 1.5 * game.get_events()["raw_dt"]
+        self.accn += targetvel.unit() * 2 * game.get_events()["raw_dt"]
 
 
         if abs(self.vel) < self.maxvel:
@@ -196,9 +202,60 @@ class influencer:
         # print(a)
         # pygame.draw.circle(game.screen , self.color,a, self.size)
         
-        pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size)
+        pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size, 2)
+
+    def render(self, game):
+        '''calls self.dash, self.draw'''
+
+        self.dash(game)
+        self.draw(game)
+
+    def update(self, game):
+        '''calls self.update_pos, self.reset'''
+        self.update_pos(game)
+        self.reset(game)
+
+
+# class sperm(pygame.sprite.Sprite):
+
+#     def __init__(self, col, x, y):
+#         pygame.sprite.Sprite.__init__(self)
+#         self.image = pygame.surface((20, 20))
+#         self.image.fill(col)
+#         self.rect = self.image.get_rect()
+#         self.rect.center = (x, y)
+# class i_dont_have_no_fucking_clue_what_im_doing_class:
+
+class map:
+    
+    size = (1200, 1200)
+    sizev = vector(*size)
+
+    def __init__(self, game, inf, cam):
+
+        self.bg = pygame.transform.scale(pygame.image.load('uteres.png').convert(), self.size)
+        self.game = game
+        self.inf = inf
+        self.cam = cam
+        self.pp = self.inf.pos
+
+    def update(self):
+        
+        self.draw_bg(self.cam.get_pos(self.pp.pos()))
+
+
+    def draw_bg(self, pos):
+        #Center tile
+
+        cx, cy = pos
+        self.game.screen.blit(self.bg, (cx, cy))
+        
+
+
+
 
         
+
 class Game:
 
     SCREEN_SIZE = (1000, 800)
@@ -215,9 +272,8 @@ class Game:
 
         self.screen = pygame.display.set_mode(self.SCREEN_SIZE)
         self.cam = cam
-        self.temp_bg = pygame.image.load('oil.jpeg').convert()
-        self.temp_bg = pygame.transform.scale(self.temp_bg, (47400/2,35500/2))
-
+        self.temp_bg = pygame.image.load('uteres.png').convert()
+        self.temp_bg = pygame.transform.scale(self.temp_bg, (4740/2,3550/2))
 
 
     def get_events(self):
@@ -246,24 +302,27 @@ class Game:
         pygame.draw.circle(self.screen, color, center, radius, width)
         
     
-    def run(self, sphere):
+    def run(self, sphere, map):
 
         while True:
 
             events = self.get_events()
-            for event in events["events"]:
+            for event in pygame.event.get():
+
                 if event.type == pygame.QUIT:
                     pygame.quit()
 
             self.screen.fill((0,0,0))
-            self.screen.blit(self.temp_bg, self.cam.get_pos((0, 0)))
+            # self.screen.blit(self.temp_bg, self.cam.get_pos((0, 0)))
             
-            sphere.dash(self)
+            map.update()
+
+            
+
+            sphere.render(self)
+            sphere.update(self)
+
             self.cam.follow_player(sphere)
-            sphere.update_pos(self)
-            
-            sphere.draw(self)
-            sphere.reset(self)
 
             pygame.display.update()
             self.CLOCK.tick(self.FPS)

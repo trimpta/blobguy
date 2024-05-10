@@ -6,4 +6,6 @@ cam = camera()
 app = Game(cam)
 sphere = influencer()
 
-app.run(sphere);
+uteres = map(app, sphere, cam)
+
+app.run(sphere, uteres)
