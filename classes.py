@@ -95,9 +95,9 @@ class camera:
     def __init__(self):
         '''init'''
 
-        self.pos = vector(500, 400)
-        self.scale = 1/1000
-        self.center = vector(500, 400)
+        self.pos = vector(0, 0)
+        self.scale = 1
+        self.center = vector(*(i/2 for i in Game.SCREEN_SIZE))
 
     def get_pos(self, pos: tuple) -> tuple:
         '''returns pos relative to camera as tuple'''
@@ -142,9 +142,9 @@ class influencer:
 
     def dash(self, mgame):
         self.history.append(self.pos.pos())
-        print(self.pos)
+        
 
-        if len(self.history) > 100 :
+        if len(self.history) > 70 :
             del self.history[0]
 
         for ind, i in enumerate(self.history):
@@ -172,7 +172,7 @@ class influencer:
             targetvel *= 0.1
             self.pos += self.vel
 
-        self.accn += targetvel.unit() * 2 * game.get_events()["raw_dt"]
+        self.accn += targetvel.unit() * 2 * game.get_events()["raw_dt"] / 1000
 
 
         if abs(self.vel) < self.maxvel:
@@ -237,11 +237,14 @@ class map:
         self.game = game
         self.inf = inf
         self.cam = cam
-        self.pp = self.inf.pos
 
     def update(self):
         
-        self.draw_bg(self.cam.get_pos(self.pp.pos()))
+        px, py = self.inf.pos.pos()
+        # print((px % 1200, py % 1200))
+        print(px % 1200, py % 1200, sep = ",")
+
+        self.draw_bg(self.cam.get_pos((px % 1200, py % 1200)))
 
 
     def draw_bg(self, pos):
