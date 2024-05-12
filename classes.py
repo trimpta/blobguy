@@ -109,8 +109,7 @@ class camera:
         return (pos - self.pos + self.center) * self.scale
     
     def follow_player(self, sphere):
-        # print(sphere.history[-1])
-        # self.pos = vector(*self.get_pos(sphere.history[-1]))
+
         self.pos = sphere.pos
     
 
@@ -199,7 +198,6 @@ class influencer:
     def draw(self, game):
         # temp code
         # a = game.cam.get_pos(self.pos.pos())
-        # print(a)
         # pygame.draw.circle(game.screen , self.color,a, self.size)
         
         pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size, 2)
@@ -241,10 +239,8 @@ class map:
     def update(self):
         
         px, py = self.inf.pos.pos()
-        # print((px % 1200, py % 1200))
-        print(px % 1200, py % 1200, sep = ",")
 
-        self.draw_bg(self.cam.get_pos((px % 1200, py % 1200)))
+        self.draw_bg((px % 1200, py % 1200))
 
 
     def draw_bg(self, pos):
@@ -303,6 +299,12 @@ class Game:
         '''draw circle'''
 
         pygame.draw.circle(self.screen, color, center, radius, width)
+
+    def debug(self, items):
+        '''prints stuff mainly, delete when no longer needed.'''
+        keys = self.get_events()["keys"]
+        if keys[pygame.K_q]:
+            print(items["influencer"].pos)
         
     
     def run(self, sphere, map):
@@ -317,6 +319,8 @@ class Game:
 
             self.screen.fill((0,0,0))
             # self.screen.blit(self.temp_bg, self.cam.get_pos((0, 0)))
+
+            self.debug({"influencer" : sphere})
             
             map.update()
 
