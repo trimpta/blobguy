@@ -135,8 +135,8 @@ class influencer:
         self.space_counter = 0
         self.history = []
 
-        # self.sperm = pygame.image.load("head.png").convert_alpha()
-        # self.sperm_rect = self.sperm.get_rect()
+        self.sperm = pygame.image.load("c_head.png").convert_alpha()
+        self.sperm_rect = self.sperm.get_rect()
         # self.sperm_mask = pygame.mask.from_surface()
 
     def dash(self, mgame):
@@ -195,12 +195,30 @@ class influencer:
             self.vel *= 0
             self.accn *= 0
 
+    # def draw(self, game):
+    #     # temp code
+    #     # a = game.cam.get_pos(self.pos.pos())
+    #     # pygame.draw.circle(game.screen , self.color,a, self.size)
+
+    #     rotated = pygame.transform.rotate(self.sperm, self.vel.angle(offset= 180 , scale= 180/math.pi))
+    #     rotated_rect = rotated.get_rect(center = self.sperm_rect.center)
+    #     game.screen.blit(rotated, game.cam.get_pos(self.pos.pos()))
+    #     pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size, 2)
+
     def draw(self, game):
-        # temp code
-        # a = game.cam.get_pos(self.pos.pos())
-        # pygame.draw.circle(game.screen , self.color,a, self.size)
-        
-        pygame.draw.circle(game.screen , self.color,game.cam.get_pos(self.pos.pos()), self.size, 2)
+        # Rotate the image
+        rotated = pygame.transform.rotate(self.sperm, self.vel.angle(offset= 180 , scale= 180/math.pi))
+        rotated_rect = rotated.get_rect(center=self.sperm_rect.center)
+
+        # Blit the rotated image onto the screen
+        blit_pos = (game.cam.get_pos(self.pos.pos())[0] - rotated_rect.width / 2, 
+                game.cam.get_pos(self.pos.pos())[1] - rotated_rect.height / 2)
+        game.screen.blit(rotated, blit_pos)
+
+
+        # Draw a circle around the object
+        # pygame.draw.circle(game.screen, self.color, game.cam.get_pos(self.pos.pos()), self.size, 2)
+
 
     def render(self, game):
         '''calls self.dash, self.draw'''
@@ -238,15 +256,15 @@ class map:
 
     def update(self):
         
-        px, py = self.inf.pos.pos()
+        self.draw_bg(self.cam.get_pos((0,0)))
 
-        self.draw_bg((px % 1200, py % 1200))
 
 
     def draw_bg(self, pos):
         #Center tile
 
         cx, cy = pos
+        
         self.game.screen.blit(self.bg, (cx, cy))
         
 
@@ -334,5 +352,5 @@ class Game:
             pygame.display.update()
             self.CLOCK.tick(self.FPS)
 
-            pygame.display.set_caption(str(round(sphere.maxvel - abs(sphere.vel))))
+            pygame.display.set_caption("WOW SREM GAME!!")
 
